@@ -52,16 +52,12 @@ document.addEventListener('DOMContentLoaded', function () {
   cfg.statusServer = kaldiUrl + '/status'
   cfg.sampleRate = 16000
   cfg.onPartialResults = (data) => {
-    console.log('onPartialResults ' + data)
     const hypText = prettyfyHyp(data[0].transcript, doUpper, doPrependSpace)
-    console.log(hypText)
     pageData.partials = hypText
     updateRes(pageData)
   }
   cfg.onResults = (data) => {
-    console.log('onResults ' + data)
     const hypText = prettyfyHyp(data[0].transcript, doUpper, doPrependSpace)
-    console.log(hypText)
     pageData.res.push(hypText)
     pageData.partials = ''
     updateRes(pageData)
@@ -147,10 +143,9 @@ document.addEventListener('DOMContentLoaded', function () {
       let initialized = false
 
       pageData.workletNode.port.onmessage = (event) => {
-        console.log('Received worklet event')
+        console.debug('Received worklet event')
         if (event.data.type === 'audioData') {
           const buffer = event.data.data
-          console.log(`Received audio data: ${buffer}`)
           if (buffer.length > 0 && pageData.transcriberReady) {
             const pcmData = resampler.downsampleAndConvertToPCM(buffer)
             pageData.transcriber.sendAudio(pcmData)
@@ -195,9 +190,21 @@ function stop (pageData) {
   pageData.recording = false
   if (pageData.player) {
     pageData.player.pause()
+    // pageData.player.dispose()
+    // pageData.player = null
   }
-  pageData.workletNode.disconnect()
-  pageData.source.disconnect()
+  if (pageData.video) {
+    pageData.video.pause()
+  }
+  if (pageData.source) {
+    pageData.source.disconnect()
+    // pageData.source = null
+  }
+  if (pageData.workletNode) {
+    pageData.workletNode.disconnect()
+    pageData.workletNode.port.close()
+    pageData.workletNode = null
+  }
   pageData.transcriberReady = false
   pageData.transcriber.stop()
   updateComponents(pageData)
